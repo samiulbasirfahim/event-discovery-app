@@ -1,24 +1,36 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+import { queryClient } from "@/queries";
+import { StatusBar } from "expo-status-bar";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useAuthStore } from "@/stores/auth.store";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { Stack } from "expo-router";
+import { useLoadApplication } from "@/hooks/useLoadApplication";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+    useLoadApplication();
 
-  return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
-  );
+    const isLoggedIn = useAuthStore((x) => x.isLoggedIn);
+
+    return (
+        <QueryClientProvider client={queryClient}>
+            <GestureHandlerRootView>
+                <StatusBar style="dark" />
+                <KeyboardProvider>
+                    <Stack
+                        screenOptions={{
+                            headerShown: false,
+                        }}
+                    >
+                        <Stack.Protected guard={isLoggedIn}>
+                            <Stack.Screen name="(protected)" />
+                        </Stack.Protected>
+                        <Stack.Protected guard={!isLoggedIn}>
+                            <Stack.Screen name="(public)" />
+                        </Stack.Protected>
+                    </Stack>
+                </KeyboardProvider>
+            </GestureHandlerRootView>
+        </QueryClientProvider>
+    );
 }
